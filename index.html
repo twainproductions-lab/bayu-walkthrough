@@ -1,0 +1,809 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+</head>
+<body>
+<title>Bayu Ballroom Walkthrough</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Noto+Serif+Display:ital,wght@0,400..600;1,400..600&display=swap">
+<style>
+/* Layout: the room fills the screen; a quiet ivory panel docks left on desktop and becomes a bottom sheet on phones. Single look by choice. */
+:root{
+  --ivory:#fbf8f2; --ivory-sunk:#f1ece3; --ink:#26241f; --ink-muted:#625d55;
+  --gold:#a8834a; --gold-deep:#8a6a36; --hair:#e4dccf; --night:#141210;
+  --serif:'Noto Serif Display', Georgia, 'Times New Roman', serif;
+  --sans:'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  color-scheme: light;
+}
+html,body{height:100%}
+body{background:var(--night);color:var(--ink);font-family:var(--sans);overflow:hidden;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px))}
+#scene{position:fixed;inset:0;touch-action:none;cursor:grab;background:var(--night)}
+#scene.dragging{cursor:grabbing}
+#scene canvas{display:block;width:100%;height:100%}
+#loading{position:fixed;inset:0;display:grid;place-items:center;background:var(--night);color:#ece4d6;
+  font-family:var(--serif);font-style:italic;font-size:1.4rem;transition:opacity .6s ease;z-index:5}
+#loading.done{opacity:0;pointer-events:none}
+
+#panel{position:fixed;z-index:3;top:calc(env(safe-area-inset-top, 0px) + 16px);left:max(16px, env(safe-area-inset-left, 0px));
+  width:330px;max-height:calc(100% - 32px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));overflow:auto;
+  background:rgba(251,248,242,.94);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  padding:24px;display:flex;flex-direction:column;gap:18px;box-shadow:0 10px 40px rgba(0,0,0,.3)}
+.eyebrow{font-size:10.5px;letter-spacing:.32em;text-transform:uppercase;color:var(--gold-deep);margin:0}
+h1{font-family:var(--serif);font-weight:500;font-size:34px;line-height:1.05;margin:6px 0 0;text-wrap:balance}
+.sub{margin:8px 0 0;font-size:13px;line-height:1.5;color:var(--ink-muted)}
+.rule{width:44px;height:2px;background:var(--gold);margin-top:14px}
+.now{background:var(--ivory-sunk);padding:14px 16px;display:flex;flex-direction:column;gap:4px}
+.now-name{margin:0;font-family:var(--serif);font-style:italic;font-size:20px;line-height:1.2}
+.now-cap{margin:0;font-size:13px;line-height:1.5;color:var(--ink-muted);min-height:3em}
+.views{display:flex;flex-wrap:wrap;gap:6px}
+.views button{font:500 12.5px/1 var(--sans);color:var(--ink);background:transparent;border:1px solid #d3c9b8;padding:9px 12px;cursor:pointer;border-radius:0}
+.views button:hover{border-color:var(--ink)}
+.views button[aria-pressed="true"]{background:var(--ink);color:var(--ivory);border-color:var(--ink)}
+.primary{font:600 12px/1 var(--sans);letter-spacing:.14em;text-transform:uppercase;color:var(--ivory);background:var(--ink);border:0;padding:14px 16px;cursor:pointer;border-radius:0}
+.primary[aria-pressed="true"]{background:var(--gold-deep)}
+button:focus-visible,input:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+fieldset{border:0;margin:0;padding:0;display:flex;flex-direction:column;gap:8px;min-width:0}
+legend{font-size:12px;font-weight:600;margin-bottom:8px;padding:0}
+.seg{display:flex}
+.seg label{flex:1;position:relative}
+.seg input{position:absolute;opacity:0;inset:0;margin:0;cursor:pointer}
+.seg span{display:block;text-align:center;font-size:12.5px;padding:9px 6px;border:1px solid #d3c9b8;margin-left:-1px}
+.seg label:first-child span{margin-left:0}
+.seg input:checked + span{background:var(--ink);color:var(--ivory);border-color:var(--ink)}
+.seg input:focus-visible + span{outline:2px solid var(--gold);outline-offset:2px}
+.note{margin:0;font-size:12px;line-height:1.55;color:var(--ink-muted);border-top:1px solid var(--hair);padding-top:14px}
+.note b{font-weight:600;color:var(--ink)}
+.hint{margin:0;font-size:12px;line-height:1.5;color:var(--gold-deep)}
+.check{border-top:1px solid var(--hair);padding-top:14px;display:flex;flex-direction:column;gap:10px}
+.check h2{margin:0;font-size:12px;font-weight:600}
+.check p{margin:0;font-size:11.5px;line-height:1.5;color:var(--ink-muted)}
+.rows{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:7px 10px;align-items:center;font-size:12.5px}
+.rows .v{font-variant-numeric:tabular-nums;text-align:right;font-weight:500}
+.pill{font-size:10.5px;font-weight:600;padding:3px 7px;white-space:nowrap;text-align:center}
+.pill.ok{background:#e2ede5;color:#2d5b3e}.pill.tight{background:#f5e8cf;color:#76501a}.pill.bad{background:#f4dad6;color:#8a2e26}
+.brand{margin:0;font-size:10px;letter-spacing:.32em;text-transform:uppercase;color:var(--ink-muted)}
+
+#pad{position:fixed;z-index:3;right:max(16px, env(safe-area-inset-right, 0px));bottom:calc(env(safe-area-inset-bottom, 0px) + 16px);
+  display:grid;grid-template-columns:repeat(3,48px);grid-template-rows:repeat(2,48px);gap:6px}
+#pad button{background:rgba(251,248,242,.9);border:0;border-radius:0;display:grid;place-items:center;cursor:pointer;color:var(--ink);touch-action:none}
+#pad button:active{background:var(--ivory-sunk)}
+#pad svg{width:20px;height:20px}
+#pad .f{grid-column:2;grid-row:1}#pad .l{grid-column:1;grid-row:2}#pad .b{grid-column:2;grid-row:2}#pad .r{grid-column:3;grid-row:2}
+
+[hidden]{display:none!important}
+.head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.hide{font:500 12px/1 var(--sans);background:transparent;border:1px solid #d3c9b8;padding:8px 10px;cursor:pointer;color:var(--ink);border-radius:0;flex:none}
+#mini{position:fixed;z-index:4;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom, 0px) + 14px);
+  display:flex;align-items:center;gap:8px;background:rgba(251,248,242,.94);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  padding:8px 8px 8px 16px;box-shadow:0 8px 30px rgba(0,0,0,.3);max-width:calc(100% - 32px)}
+#mini p{margin:0;font-family:var(--serif);font-style:italic;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;flex:1}
+.mbtn{font:600 11px/1 var(--sans);letter-spacing:.12em;text-transform:uppercase;border:0;padding:11px 12px;cursor:pointer;white-space:nowrap;border-radius:0;flex:none}
+.mbtn.dark{background:var(--ink);color:var(--ivory)}
+.mbtn.light{background:transparent;color:var(--ink);border:1px solid #d3c9b8}
+@media (max-width:720px){
+  #panel{top:auto;bottom:calc(env(safe-area-inset-bottom, 0px) + 12px);left:max(12px, env(safe-area-inset-left, 0px));right:max(12px, env(safe-area-inset-right, 0px));
+    width:auto;max-height:46%;padding:16px;gap:12px}
+  h1{font-size:24px}
+  .sub,.rule,.note,.brand{display:none}
+  .views{flex-wrap:nowrap;overflow-x:auto;padding-bottom:2px}
+  .views button{white-space:nowrap}
+  .now-cap{min-height:0}
+  #pad{bottom:auto;top:calc(env(safe-area-inset-top, 0px) + 12px);grid-template-columns:repeat(3,42px);grid-template-rows:repeat(2,42px)}
+}
+@media (prefers-reduced-motion: reduce){ #loading{transition:none} }
+</style>
+
+<div id="scene" role="img" aria-label="3D model of the empty Bayu Ballroom at JW Marriott Kuala Lumpur"></div>
+<div id="loading">Building the room</div>
+
+<aside id="panel">
+  <header>
+    <div class="head"><div><p class="eyebrow">JW Marriott Kuala Lumpur</p>
+    <h1>Bayu Ballroom</h1></div><button type="button" id="hidePanel" class="hide">Hide</button></div>
+    <p class="sub">Fifteen 6 ft rounds for ten and the couple’s table, placed to measured clearances, with cream cloths and gold Tiffany chairs. Décor comes later.</p>
+    <div class="rule"></div>
+  </header>
+  <div class="now" aria-live="polite">
+    <p class="now-name" id="viewName">Overview</p>
+    <p class="now-cap" id="viewCap"></p>
+  </div>
+  <nav class="views" id="views" aria-label="Viewpoints"></nav>
+  <button id="tour" class="primary" aria-pressed="false">Play the tour</button>
+  <fieldset>
+    <legend>Lighting</legend>
+    <div class="seg">
+      <label><input type="radio" name="light" id="light-house" value="house" checked><span>House lights</span></label>
+      <label><input type="radio" name="light" id="light-evening" value="evening"><span>Evening</span></label>
+    </div>
+  </fieldset>
+  <fieldset>
+    <legend>Chairs</legend>
+    <div class="seg">
+      <label><input type="radio" name="chairs" id="chairs-in" value="in"><span>Tucked in</span></label>
+      <label><input type="radio" name="chairs" id="chairs-out" value="seated" checked><span>Guests seated</span></label>
+    </div>
+  </fieldset>
+  <section class="check" aria-labelledby="check-title">
+    <h2 id="check-title">Spacing check</h2>
+    <div class="rows" id="checks"></div>
+    <p>Measured from the chair backs. The layout keeps at least 0.6 m between seated guests so a server can pass, and 0.9 m or more where people walk.</p>
+  </section>
+  <p class="note"><b>104 × 49 ft</b> (31.7 × 14.9 m), stage 6 ft deep with a 12 ft run to the LED wall, screen 15 ft × 9 ft 11 in, from the hotel plan. Stage height (about 1 m) and ceiling height (about 6 m) are estimated from the photos and should be confirmed with the hotel.</p>
+  <p class="note"><b>Dance floor 30 × 18 ft</b> (540 sq ft) with the couple’s table on it, front left. The hotel’s AV table stays at the stage’s front-left corner. <b>Buffets:</b> two 16 ft lines of six chafing dishes, one each side of the entrance.</p>
+  <p class="hint" id="hint">Drag to look around. W A S D or the arrow keys to walk.</p>
+  <p class="brand">June &amp; Co</p>
+</aside>
+
+<div id="mini" hidden>
+  <p id="miniName">Overview</p>
+  <button type="button" id="miniTour" class="mbtn dark">Play the tour</button>
+  <button type="button" id="showPanel" class="mbtn light">Menu</button>
+</div>
+
+<div id="pad" aria-label="Walk controls">
+  <button class="f" data-move="f" aria-label="Walk forward"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 13l6-6 6 6"/></svg></button>
+  <button class="l" data-move="l" aria-label="Step left"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M13 4l-6 6 6 6"/></svg></button>
+  <button class="b" data-move="b" aria-label="Walk back"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 7l6 6 6-6"/></svg></button>
+  <button class="r" data-move="r" aria-label="Step right"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M7 4l6 6-6 6"/></svg></button>
+</div>
+
+<script type="importmap">
+{ "imports": {
+  "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+} }
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+
+const V = THREE.Vector3;
+const FT = 0.3048;
+/* Dimensions from the hotel plan (Bayu Ballroom - Dimension.pdf) */
+const L = 104 * FT, W = 49 * FT, HL = L / 2, HW = W / 2;      // 31.70 x 14.94 m
+const WALL_H = 4.7, SOFFIT_Y = 5.2, CEIL_Y = 6.0;              // estimated from photos: the proscenium and frieze sit below the cornice
+const ALC_W = 26 * FT, ALC_D = 6 * FT, STAGE_D = 6 * FT;       // alcove and stage
+const STAGE_W = 12.4, STAGE_H = 1.0, ALC_H = 3.25;                           // nine-panel front, almost wall to wall, as in the photos
+const LED_W = 15 * FT, LED_H = (9 + 11 / 12) * FT;             // 4.57 x 3.02 m
+const DOOR_W = (5 + 9 / 12) * FT, DOOR_H = (7 + 8 / 12) * FT;   // 1.75 x 2.34 m leaf opening
+const STAGE_FRONT = -HL + STAGE_D;                             // z of the stage front
+const ALC_BACK = -HL - ALC_D;                                  // z of the LED wall
+
+/* ---------- renderer ---------- */
+const wrap = document.getElementById('scene');
+const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.75));
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+wrap.appendChild(renderer.domElement);
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x101010);
+const camera = new THREE.PerspectiveCamera(64, window.innerWidth / window.innerHeight, 0.05, 90);
+camera.rotation.order = 'YXZ';
+const pmrem = new THREE.PMREMGenerator(renderer);
+const envTex = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+
+let seed = 23;
+const rnd = () => { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; };
+const rr = (a, b) => a + (b - a) * rnd();
+
+/* ---------- textures ---------- */
+function tex(c, rx = 1, ry = 1) { const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = renderer.capabilities.getMaxAnisotropy(); if (rx !== 1 || ry !== 1) { t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(rx, ry); } return t; }
+function canvas(w, h) { const c = document.createElement('canvas'); c.width = w; c.height = h; return [c, c.getContext('2d')]; }
+
+function carpetTexture() {
+  const S = 1024, [c, g] = canvas(S, S);
+  g.fillStyle = '#868282'; g.fillRect(0, 0, S, S);
+  const wrapDraw = (fn) => { for (const ox of [-S, 0, S]) for (const oy of [-S, 0, S]) { g.save(); g.translate(ox, oy); fn(); g.restore(); } };
+  // soft navy and slate shadows
+  for (let i = 0; i < 70; i++) { const x = rr(0, S), y = rr(0, S), r = rr(40, 120); wrapDraw(() => { const gr = g.createRadialGradient(x, y, 0, x, y, r); gr.addColorStop(0, 'rgba(58,68,92,0.45)'); gr.addColorStop(1, 'rgba(58,68,92,0)'); g.fillStyle = gr; g.fillRect(x - r, y - r, r * 2, r * 2); }); }
+  // mustard drifts
+  for (let i = 0; i < 30; i++) {
+    const cx = rr(0, S), cy = rr(0, S), n = Math.round(rr(8, 22)), ang = rr(0, Math.PI * 2);
+    wrapDraw(() => { g.fillStyle = 'rgba(196,158,74,0.42)'; for (let k = 0; k < n; k++) { const d = k * rr(5, 9); g.beginPath(); g.ellipse(cx + Math.cos(ang) * d + rr(-12, 12), cy + Math.sin(ang) * d + rr(-12, 12), rr(8, 20), rr(5, 13), rr(0, 3), 0, Math.PI * 2); g.fill(); } });
+  }
+  // ivory coral lacework
+  g.lineCap = 'round';
+  for (let i = 0; i < 1900; i++) {
+    let x = rr(0, S), y = rr(0, S), a = rr(0, Math.PI * 2); const pts = [[x, y]];
+    for (let k = 0; k < 7; k++) { a += rr(-1.2, 1.2); x += Math.cos(a) * 9; y += Math.sin(a) * 9; pts.push([x, y]); }
+    wrapDraw(() => { g.strokeStyle = 'rgba(232,229,220,0.55)'; g.lineWidth = rr(1.4, 2.6); g.beginPath(); g.moveTo(pts[0][0], pts[0][1]); for (const p of pts) g.lineTo(p[0], p[1]); g.stroke(); });
+  }
+  // fine red tracery
+  for (let i = 0; i < 70; i++) {
+    let x = rr(0, S), y = rr(0, S), a = rr(0, Math.PI * 2); const pts = [[x, y]];
+    for (let k = 0; k < 16; k++) { a += rr(-0.7, 0.7); x += Math.cos(a) * 8; y += Math.sin(a) * 8; pts.push([x, y]); }
+    wrapDraw(() => { g.strokeStyle = 'rgba(158,46,48,0.7)'; g.lineWidth = 2; g.beginPath(); g.moveTo(pts[0][0], pts[0][1]); for (const p of pts) g.lineTo(p[0], p[1]); g.stroke(); });
+  }
+  const img = g.getImageData(0, 0, S, S);
+  for (let k = 0; k < img.data.length; k += 4) { const n = (Math.random() - 0.5) * 22; img.data[k] += n; img.data[k + 1] += n; img.data[k + 2] += n; }
+  g.putImageData(img, 0, 0);
+  return tex(c, W / 3.2, L / 3.2);
+}
+function fabricTexture() {
+  const [c, g] = canvas(256, 512);
+  g.fillStyle = '#2d2926'; g.fillRect(0, 0, 256, 512);
+  const img = g.getImageData(0, 0, 256, 512);
+  for (let k = 0; k < img.data.length; k += 4) { const n = (Math.random() - 0.5) * 18; img.data[k] += n; img.data[k + 1] += n; img.data[k + 2] += n; }
+  g.putImageData(img, 0, 0);
+  // fine metallic inlay: an inner border and two verticals, as on the real panels
+  g.strokeStyle = 'rgba(196,170,128,0.85)'; g.lineWidth = 2.2;
+  g.strokeRect(14, 14, 228, 484);
+  g.beginPath(); g.moveTo(84, 14); g.lineTo(84, 498); g.moveTo(172, 14); g.lineTo(172, 498); g.moveTo(14, 440); g.lineTo(242, 440); g.stroke();
+  return tex(c);
+}
+function doorTexture() {
+  const [c, g] = canvas(256, 512);
+  g.fillStyle = '#625b53'; g.fillRect(0, 0, 256, 512);
+  for (let x = 0; x < 256; x++) { g.fillStyle = `rgba(30,24,18,${0.05 + 0.06 * Math.abs(Math.sin(x * 0.37) * Math.sin(x * 0.11))})`; g.fillRect(x, 0, 1, 512); }
+  g.fillStyle = 'rgba(20,16,12,0.55)'; g.fillRect(0, 168, 256, 3);               // split between transom and leaf
+  g.fillStyle = 'rgba(205,178,130,0.9)'; g.fillRect(238, 0, 3, 512);           // fine gold line at the meeting edge
+  return tex(c);
+}
+function stageFrontTexture() {
+  // nine panels, wide and narrow alternating; the second and eighth are speaker grilles (site photos)
+  const Wc = 4096, Hc = 300, [c, g] = canvas(Wc, Hc);
+  g.fillStyle = '#b2aea7'; g.fillRect(0, 0, Wc, Hc);
+  const units = [1.4, 1, 1.4, 1, 1.4, 1, 1.4, 1, 1.4], gapU = 0.16;
+  const total = units.reduce((a, b) => a + b, 0) + gapU * (units.length + 1), k = Wc / total;
+  let x = gapU * k;
+  units.forEach((u, i) => {
+    const w = u * k, y0 = 50, h = Hc - 100;
+    if (i === 1 || i === 7) {
+      g.fillStyle = '#97928a'; g.fillRect(x, y0, w, h);
+      g.fillStyle = 'rgba(40,34,28,0.35)'; for (let yy = y0 + 8; yy < y0 + h - 4; yy += 7) for (let xx = x + 8; xx < x + w - 4; xx += 7) g.fillRect(xx, yy, 3, 3);
+    } else { g.fillStyle = '#b9b5ae'; g.fillRect(x, y0, w, h); }
+    // raised white moulding with light from above
+    g.lineWidth = 16; g.strokeStyle = '#efebe3'; g.strokeRect(x + 8, y0 + 8, w - 16, h - 16);
+    g.lineWidth = 3; g.strokeStyle = 'rgba(255,252,245,0.9)'; g.beginPath(); g.moveTo(x + 1, y0 + h - 1); g.lineTo(x + 1, y0 + 1); g.lineTo(x + w - 1, y0 + 1); g.stroke();
+    g.strokeStyle = 'rgba(60,50,40,0.28)'; g.beginPath(); g.moveTo(x + w - 1, y0 + 1); g.lineTo(x + w - 1, y0 + h - 1); g.lineTo(x + 1, y0 + h - 1); g.stroke();
+    g.strokeStyle = 'rgba(60,50,40,0.22)'; g.lineWidth = 2; g.strokeRect(x + 17, y0 + 17, w - 34, h - 34);
+    x += w + gapU * k;
+  });
+  return tex(c);
+}
+function ledTexture() {
+  const [c, g] = canvas(900, 600);
+  g.fillStyle = '#2e2a28'; g.fillRect(0, 0, 900, 600);
+  const img = g.getImageData(0, 0, 900, 600);
+  for (let k = 0; k < img.data.length; k += 4) { const n = (Math.random() - 0.5) * 8; img.data[k] += n; img.data[k + 1] += n; img.data[k + 2] += n; }
+  g.putImageData(img, 0, 0);
+  g.fillStyle = 'rgba(0,0,0,0.18)';
+  for (let i = 1; i < 9; i++) g.fillRect(i * 100 - 1, 0, 2, 600);
+  for (let j = 1; j < 6; j++) g.fillRect(0, j * 100 - 1, 900, 2);
+  return tex(c);
+}
+function exitTexture() {
+  const [c, g] = canvas(256, 64);
+  g.fillStyle = '#e8ece9'; g.fillRect(0, 0, 256, 64);
+  g.fillStyle = '#1e7b55'; g.fillRect(6, 6, 244, 52);
+  g.fillStyle = '#ffffff'; g.font = '600 30px Inter, Arial, sans-serif'; g.textBaseline = 'middle'; g.fillText('KELUAR', 26, 33);
+  g.fillText('→', 200, 31);
+  return tex(c);
+}
+
+/* ---------- materials ---------- */
+const M = {
+  wall: new THREE.MeshStandardMaterial({ color: 0xbcb8b1, roughness: 0.9 }),
+  moulding: new THREE.MeshStandardMaterial({ color: 0xefebe4, roughness: 0.55 }),
+  ceiling: new THREE.MeshStandardMaterial({ color: 0xefeeea, roughness: 0.9 }),
+  floor: new THREE.MeshStandardMaterial({ map: carpetTexture(), roughness: 0.97 }),
+  fabric: new THREE.MeshStandardMaterial({ map: fabricTexture(), roughness: 0.95 }),
+  door: new THREE.MeshStandardMaterial({ map: doorTexture(), roughness: 0.6 }),
+  handle: new THREE.MeshStandardMaterial({ color: 0x1c1c1c, metalness: 0.6, roughness: 0.35, envMap: envTex }),
+  mirror: new THREE.MeshStandardMaterial({ color: 0xa9a6a1, metalness: 1, roughness: 0.1, envMap: envTex, envMapIntensity: 1.3, emissive: 0x3a3733, emissiveIntensity: 0.6 }),
+  darkGlass: new THREE.MeshStandardMaterial({ color: 0x4a4843, metalness: 0.8, roughness: 0.12, envMap: envTex, envMapIntensity: 0.5 }),
+  stageTop: new THREE.MeshStandardMaterial({ color: 0x4e3f35, roughness: 0.22, envMap: envTex, envMapIntensity: 0.6 }),
+  nosing: new THREE.MeshStandardMaterial({ color: 0x2f241d, roughness: 0.3, envMap: envTex, envMapIntensity: 0.4 }),
+  alcoveCeil: new THREE.MeshStandardMaterial({ color: 0x5f564d, roughness: 0.95 }),
+  reveal: new THREE.MeshStandardMaterial({ color: 0x9e9488, roughness: 0.8 }),
+  steps: new THREE.MeshStandardMaterial({ color: 0x57504a, roughness: 0.95 }),
+  stageFront: new THREE.MeshStandardMaterial({ map: stageFrontTexture(), roughness: 0.7 }),
+  alcove: new THREE.MeshStandardMaterial({ color: 0xa0978d, roughness: 0.9 }),
+  led: new THREE.MeshStandardMaterial({ map: ledTexture(), roughness: 0.45, metalness: 0.1, envMap: envTex, envMapIntensity: 0.25 }),
+  black: new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.6 }),
+  crystal: new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.03, metalness: 0.1, envMap: envTex, envMapIntensity: 2.2, emissive: 0xfff2dc, emissiveIntensity: 0.55 }),
+  glow: new THREE.MeshBasicMaterial({ color: new THREE.Color(2.4, 2.1, 1.7), toneMapped: false }),
+  sconce: new THREE.MeshBasicMaterial({ color: new THREE.Color(2.6, 2.0, 1.3), toneMapped: false }),
+  downlight: new THREE.MeshBasicMaterial({ color: new THREE.Color(1.9, 1.8, 1.6), toneMapped: false }),
+  cove: new THREE.MeshBasicMaterial({ color: new THREE.Color(1.5, 1.7, 1.9), toneMapped: false }),
+  vent: new THREE.MeshStandardMaterial({ color: 0x2c2c2c, roughness: 0.8 }),
+  exit: new THREE.MeshBasicMaterial({ map: exitTexture() })
+};
+const add = (o, parent = scene) => { parent.add(o); return o; };
+function box(w, h, d, mat, x, y, z, parent = scene) { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat); m.position.set(x, y, z); return add(m, parent); }
+function plane(w, h, mat, x, y, z, parent = scene) { const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), mat); m.position.set(x, y, z); return add(m, parent); }
+
+/* ---------- floor, walls ---------- */
+const floor = add(new THREE.Mesh(new THREE.PlaneGeometry(W, L), M.floor)); floor.rotation.x = -Math.PI / 2;
+const WALLS = {
+  stage: { len: W, place: (g, u) => { g.position.set(u, 0, -HL); g.rotation.y = 0; } },
+  entrance: { len: W, place: (g, u) => { g.position.set(-u, 0, HL); g.rotation.y = Math.PI; } },
+  left: { len: L, place: (g, u) => { g.position.set(-HW, 0, u); g.rotation.y = Math.PI / 2; } },
+  right: { len: L, place: (g, u) => { g.position.set(HW, 0, -u); g.rotation.y = -Math.PI / 2; } }
+};
+// wall surfaces, cornice, dark glass band and skirting
+for (const [k, wd] of Object.entries(WALLS)) {
+  const g = new THREE.Group(); wd.place(g, 0); add(g);
+  if (k === 'stage') {
+    const sideW = (W - ALC_W) / 2;
+    for (const s of [-1, 1]) plane(sideW, WALL_H, M.wall, s * (ALC_W / 2 + sideW / 2), WALL_H / 2, 0, g);
+    plane(ALC_W, WALL_H - (STAGE_H + ALC_H), M.wall, 0, STAGE_H + ALC_H + (WALL_H - STAGE_H - ALC_H) / 2, 0, g);
+  } else plane(wd.len, WALL_H, M.wall, 0, WALL_H / 2, 0, g);
+  box(wd.len, 0.14, 0.04, M.moulding, 0, 0.07, 0.02, g);                   // skirting
+  box(wd.len, 0.16, 0.12, M.moulding, 0, WALL_H - 0.08, 0.06, g);          // cornice
+  box(wd.len, 0.06, 0.06, M.moulding, 0, WALL_H - 0.5, 0.03, g);           // picture rail
+  plane(wd.len, 0.36, M.darkGlass, 0, WALL_H + 0.18, 0.005, g);            // dark glass band
+  box(wd.len, 0.14, 0.2, M.moulding, 0, WALL_H + 0.43, 0.1, g);            // crown under soffit
+}
+
+/* ---------- wall elements (local: x along wall, z out of wall) ---------- */
+function framed(gr, w, h, y0, inner, frameW = 0.07) {
+  plane(w, h, inner, 0, y0 + h / 2, 0.02, gr);
+  box(w + frameW * 2, frameW, 0.05, M.moulding, 0, y0 + h + frameW / 2, 0.025, gr);
+  box(w + frameW * 2, frameW, 0.05, M.moulding, 0, y0 - frameW / 2, 0.025, gr);
+  for (const s of [-1, 1]) box(frameW, h, 0.05, M.moulding, s * (w / 2 + frameW / 2), y0 + h / 2, 0.025, gr);
+}
+const sconceGeo = new THREE.CylinderGeometry(0.028, 0.028, 0.34, 12);
+function sconce(gr, x) {
+  box(0.12, 0.5, 0.03, M.mirror, x, 2.35, 0.06, gr);
+  for (const s of [-1, 1]) { const c = add(new THREE.Mesh(sconceGeo, M.sconce), gr); c.position.set(x + s * 0.06, 2.4 + (s > 0 ? 0.05 : -0.05), 0.12); }
+  box(0.2, 0.02, 0.1, M.mirror, x, 2.18, 0.1, gr);
+}
+function panelEl(w) { const gr = new THREE.Group(); framed(gr, w, 3.05, 0.42, M.fabric); return gr; }
+function mirrorEl(w, withSconce = true, y0 = 0.42, h = 3.05) { const gr = new THREE.Group(); framed(gr, w, h, y0, M.mirror, 0.05); if (withSconce) sconce(gr, 0); return gr; }
+function doorEl() {
+  const gr = new THREE.Group(); const tall = 3.3;
+  for (const s of [-1, 1]) { const leaf = plane(DOOR_W / 2 - 0.01, tall, M.door, s * DOOR_W / 4, tall / 2, 0.03, gr); if (s > 0) leaf.scale.x = -1;
+    box(0.025, 0.75, 0.025, M.handle, s * 0.09, 1.15, 0.08, gr); }
+  framed(gr, DOOR_W, tall, 0, new THREE.MeshBasicMaterial({ visible: false }), 0.12);
+  const ex = plane(0.5, 0.125, M.exit, 0, tall + 0.4, 0.04, gr);
+  return gr;
+}
+function pilasterEl(w) { const gr = new THREE.Group(); box(w, WALL_H, 0.16, M.wall, 0, WALL_H / 2, 0.08, gr); box(w + 0.06, 0.16, 0.2, M.moulding, 0, 0.08, 0.1, gr); return gr; }
+function putOn(wall, el, u) { const g = new THREE.Group(); g.add(el); WALLS[wall].place(g, u); add(g); }
+function fillRun(wall, a, b) {
+  const gap = b - a; if (gap < 0.9) return;
+  const MW = 0.5, SP = 0.16;
+  let n = Math.max(1, Math.round((gap - MW) / 2.2));
+  let pw = (gap - SP * 2 - (n + 1) * MW - 2 * n * SP) / n;
+  if (pw < 0.7) { putOn(wall, panelEl(gap - 0.35), (a + b) / 2); return; }
+  let u = a + SP;
+  for (let i = 0; i <= n; i++) {
+    putOn(wall, mirrorEl(MW), u + MW / 2); u += MW + SP;
+    if (i < n) { putOn(wall, panelEl(pw), u + pw / 2); u += pw + SP; }
+  }
+}
+// long walls: three double doors and four pilasters each, as on the plan (feet from the stage wall)
+const longDoors = [21.1, 48.7, 76.5].map(f => -HL + f * FT);
+const longPil = [7.0, 34.8, 62.3, 89.7].map(f => -HL + f * FT);
+for (const wall of ['left', 'right']) {
+  const items = [];
+  longDoors.forEach(z => items.push({ c: z, w: DOOR_W + 0.3, el: () => doorEl() }));
+  longPil.forEach(z => items.push({ c: z, w: 0.6, el: () => pilasterEl(0.6) }));
+  items.sort((p, q) => p.c - q.c);
+  const toU = z => wall === 'left' ? z : -z;
+  let last = -HL + (STAGE_D + 0.3);
+  if (wall === 'right') items.reverse();
+  // run along the wall in its own u direction
+  const segs = items.map(it => ({ u: toU(it.c), w: it.w, el: it.el })).sort((p, q) => p.u - q.u);
+  let prev = wall === 'left' ? -HL + 0.05 : -HL + 0.05;
+  for (const s of segs) { fillRun(wall, prev, s.u - s.w / 2); putOn(wall, s.el(), s.u); prev = s.u + s.w / 2; }
+  fillRun(wall, prev, HL - 0.05);
+}
+// entrance wall: the two double doors, symmetric about the centre line as in the photos
+const EDOOR = 2.6;
+for (const s of [-1, 1]) putOn('entrance', doorEl(), s * EDOOR);
+fillRun('entrance', -HW + 0.05, -EDOOR - DOOR_W / 2 - 0.2);
+fillRun('entrance', -EDOOR + DOOR_W / 2 + 0.2, EDOOR - DOOR_W / 2 - 0.2);
+fillRun('entrance', EDOOR + DOOR_W / 2 + 0.2, HW - 0.05);
+// stage wall: tall mirrors beside the proscenium, then panels to the corners
+for (const s of [-1, 1]) {
+  const edge = ALC_W / 2 + 0.36;
+  putOn('stage', mirrorEl(1.15, false, STAGE_H, 3.55), s * (edge + 0.62));
+  fillRun('stage', s > 0 ? edge + 1.35 : -HW + 0.05, s > 0 ? HW - 0.05 : -(edge + 1.35));
+}
+
+/* ---------- stage, alcove and LED wall ---------- */
+// alcove shell
+plane(ALC_W, ALC_H, M.alcove, 0, STAGE_H + ALC_H / 2, ALC_BACK);
+for (const s of [-1, 1]) { const p = plane(ALC_D, ALC_H, M.alcove, s * ALC_W / 2, STAGE_H + ALC_H / 2, -HL - ALC_D / 2); p.rotation.y = -s * Math.PI / 2; }
+const alcCeil = plane(ALC_W, ALC_D, M.alcoveCeil, 0, STAGE_H + ALC_H, -HL - ALC_D / 2); alcCeil.rotation.x = Math.PI / 2;
+// alcove skirting and floor sockets
+box(ALC_W, 0.12, 0.03, M.moulding, 0, STAGE_H + 0.06, ALC_BACK + 0.015);
+for (const s of [-1, 1]) { box(0.03, 0.12, ALC_D, M.moulding, s * (ALC_W / 2 - 0.015), STAGE_H + 0.06, -HL - ALC_D / 2); box(0.12, 0.08, 0.01, M.black, s * (LED_W / 2 + 0.55), STAGE_H + 0.3, ALC_BACK + 0.01); }
+
+// proscenium frame
+box(ALC_W + 0.7, 0.36, 0.14, M.moulding, 0, STAGE_H + ALC_H + 0.18, -HL + 0.07);
+for (const s of [-1, 1]) box(0.36, ALC_H + STAGE_H, 0.14, M.moulding, s * (ALC_W / 2 + 0.18), (ALC_H + STAGE_H) / 2, -HL + 0.07);
+box(ALC_W + 1.1, 0.06, 0.18, M.moulding, 0, STAGE_H + ALC_H + 0.39, -HL + 0.09);
+// grey inner reveal around the opening
+for (const s of [-1, 1]) box(0.1, ALC_H, 0.16, M.reveal, s * (ALC_W / 2 - 0.05), STAGE_H + ALC_H / 2, -HL + 0.04);
+box(ALC_W, 0.1, 0.16, M.reveal, 0, STAGE_H + ALC_H - 0.05, -HL + 0.04);
+// LED wall
+box(LED_W, LED_H, 0.12, M.led, 0, STAGE_H + LED_H / 2, ALC_BACK + 0.06);
+box(LED_W + 0.04, 0.03, 0.14, M.black, 0, STAGE_H + LED_H + 0.015, ALC_BACK + 0.06);
+// stage platform: alcove part plus the wider front section
+box(ALC_W, STAGE_H, ALC_D, M.stageTop, 0, STAGE_H / 2, -HL - ALC_D / 2);
+box(STAGE_W, STAGE_H, STAGE_D, M.stageTop, 0, STAGE_H / 2, -HL + STAGE_D / 2);
+plane(STAGE_W, STAGE_H - 0.04, M.stageFront, 0, (STAGE_H - 0.04) / 2, STAGE_FRONT + 0.003);
+for (const s of [-1, 1]) { const sp = plane(STAGE_D, STAGE_H - 0.04, M.stageFront, s * (STAGE_W / 2 + 0.003), (STAGE_H - 0.04) / 2, -HL + STAGE_D / 2); sp.rotation.y = s * Math.PI / 2; }
+box(STAGE_W + 0.02, 0.04, STAGE_D + 0.02, M.stageTop, 0, STAGE_H - 0.02, -HL + STAGE_D / 2);
+box(STAGE_W + 0.05, 0.05, 0.05, M.nosing, 0, STAGE_H - 0.025, STAGE_FRONT + 0.02);           // dark wood nosing
+box(STAGE_W + 0.05, 0.13, 0.05, M.moulding, 0, 0.065, STAGE_FRONT + 0.025);                  // white plinth
+for (const s of [-1, 1]) box(0.05, 0.13, STAGE_D, M.moulding, s * (STAGE_W / 2 + 0.025), 0.065, -HL + STAGE_D / 2);
+// side steps at both ends, in the gap between the stage end and the side wall
+for (const s of [-1, 1]) {
+  for (let i = 0; i < 4; i++) {
+    const h = STAGE_H * (i + 1) / 4;
+    box(0.29, h, 1.0, M.steps, s * (STAGE_W / 2 + 0.145 + (3 - i) * 0.29), h / 2, -HL + 0.55);
+  }
+}
+// hanging speakers and the lighting bar over the stage
+function speaker(x, z, y = 4.0) { box(0.34, 0.55, 0.32, M.black, x, y, z); box(0.025, SOFFIT_Y - y - 0.27, 0.025, M.black, x, (SOFFIT_Y + y + 0.27) / 2, z); }
+for (const s of [-1, 1]) speaker(s * (ALC_W / 2 + 0.9), -HL + 1.1, 3.95);
+for (const z of [-5.5, 5.5]) for (const s of [-1, 1]) speaker(s * (HW - 0.7), z, 3.9);
+box(5.2, 0.08, 0.08, M.black, 0, SOFFIT_Y - 0.25, -HL + 2.4);
+for (let i = -2; i <= 2; i++) { const c = box(0.14, 0.22, 0.14, M.black, i * 1.1, SOFFIT_Y - 0.42, -HL + 2.4); c.rotation.x = 0.5; }
+
+/* ---------- ceiling: perimeter soffit, cove light, coffers, downlights ---------- */
+const CEIL_MARK = scene.children.length;
+const BAND = 1.6, IW = W - BAND * 2, IL = L - BAND * 2;
+const soff = (w, d, x, z) => { const p = plane(w, d, M.ceiling, x, SOFFIT_Y, z); p.rotation.x = Math.PI / 2; };
+soff(W, BAND, 0, -HL + BAND / 2); soff(W, BAND, 0, HL - BAND / 2);
+soff(BAND, IL, -HW + BAND / 2, 0); soff(BAND, IL, HW - BAND / 2, 0);
+// fascia up to the raised ceiling, with the cove strip at its foot
+const FAS = CEIL_Y - SOFFIT_Y;
+for (const s of [-1, 1]) {
+  const f1 = plane(IW, FAS, M.ceiling, 0, SOFFIT_Y + FAS / 2, s * IL / 2); f1.rotation.y = s > 0 ? Math.PI : 0;
+  const f2 = plane(IL, FAS, M.ceiling, s * IW / 2, SOFFIT_Y + FAS / 2, 0); f2.rotation.y = -s * Math.PI / 2;
+  box(IW, 0.025, 0.04, M.cove, 0, SOFFIT_Y + 0.02, s * (IL / 2 + 0.12));
+  box(0.04, 0.025, IL, M.cove, s * (IW / 2 + 0.12), SOFFIT_Y + 0.02, 0);
+  box(IW + 0.5, 0.12, 0.3, M.moulding, 0, SOFFIT_Y + 0.06, s * (IL / 2 + 0.2));
+  box(0.3, 0.12, IL + 0.5, M.moulding, s * (IW / 2 + 0.2), SOFFIT_Y + 0.06, 0);
+}
+const ceilIn = plane(IW, IL, M.ceiling, 0, CEIL_Y, 0); ceilIn.rotation.x = Math.PI / 2;
+// coffers: 3 across, 7 along
+const CX = 3, CZ = 7, cw = IW / CX, cl = IL / CZ;
+for (let i = 1; i < CX; i++) { box(0.42, 0.24, IL, M.moulding, -IW / 2 + i * cw, CEIL_Y - 0.12, 0); for (const s of [-1, 1]) box(0.05, 0.05, IL, M.moulding, -IW / 2 + i * cw + s * 0.24, CEIL_Y - 0.2, 0); }
+for (let j = 1; j < CZ; j++) { box(IW, 0.24, 0.42, M.moulding, 0, CEIL_Y - 0.12, -IL / 2 + j * cl); for (const s of [-1, 1]) box(IW, 0.05, 0.05, M.moulding, 0, CEIL_Y - 0.2, -IL / 2 + j * cl + s * 0.24); }
+const dlGeo = new THREE.CircleGeometry(0.06, 18);
+for (let i = 0; i < CX; i++) for (let j = 0; j < CZ; j++) {
+  const cx = -IW / 2 + (i + 0.5) * cw, cz = -IL / 2 + (j + 0.5) * cl;
+  // inner step of each coffer
+  for (const s of [-1, 1]) { box(cw - 0.9, 0.04, 0.06, M.moulding, cx, CEIL_Y - 0.02, cz + s * (cl / 2 - 0.55)); box(0.06, 0.04, cl - 1.04, M.moulding, cx + s * (cw / 2 - 0.45), CEIL_Y - 0.02, cz); }
+  const isChandelier = i === 1 && (j === 1 || j === 3 || j === 5);
+  if (!isChandelier) for (const [a, b] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) { const d = add(new THREE.Mesh(dlGeo, M.downlight)); d.rotation.x = Math.PI / 2; d.position.set(cx + a * cw * 0.22, CEIL_Y - 0.004, cz + b * cl * 0.22); }
+  // linear air slots along the coffer edges
+  box(0.06, 0.01, cl * 0.6, M.vent, cx - cw / 2 + 0.36, CEIL_Y - 0.005, cz);
+}
+// soffit downlights around the perimeter band
+for (let z = -HL + 2.4; z < HL - 1; z += 3.2) for (const s of [-1, 1]) { const d = add(new THREE.Mesh(dlGeo, M.downlight)); d.rotation.x = Math.PI / 2; d.position.set(s * (HW - 0.8), SOFFIT_Y - 0.004, z); }
+for (let x = -HW + 2.2; x < HW - 1; x += 3.0) for (const s of [-1, 1]) { const d = add(new THREE.Mesh(dlGeo, M.downlight)); d.rotation.x = Math.PI / 2; d.position.set(x, SOFFIT_Y - 0.004, s * (HL - 0.8)); }
+
+/* ---------- double-ring crystal chandeliers ---------- */
+const chandLights = [];
+function chandelier(z) {
+  const canopy = add(new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.55, 0.04, 40), M.mirror)); canopy.position.set(0, CEIL_Y - 0.02, z);
+  const rings = [[1.25, CEIL_Y - 1.15, 0.24], [0.95, CEIL_Y - 1.55, 0.2]];
+  const rodGeo = new THREE.BoxGeometry(0.012, 1, 0.022);
+  let total = 0; rings.forEach(([r]) => total += Math.round(2 * Math.PI * r / 0.021) * 2);
+  const inst = new THREE.InstancedMesh(rodGeo, M.crystal, total);
+  const m = new THREE.Matrix4(), q = new THREE.Quaternion(), s = new V(); let k = 0;
+  rings.forEach(([r, y, h]) => {
+    for (const rad of [r, r - 0.05]) {
+      const n = Math.round(2 * Math.PI * r / 0.021);
+      for (let i = 0; i < n; i++) {
+        const a = (i / n) * Math.PI * 2;
+        q.setFromAxisAngle(new V(0, 1, 0), -a); s.set(1, h * rr(0.92, 1.05), 1);
+        m.compose(new V(Math.cos(a) * rad, y, z + Math.sin(a) * rad), q, s); inst.setMatrixAt(k++, m);
+      }
+    }
+    const core = add(new THREE.Mesh(new THREE.TorusGeometry(r - 0.025, 0.018, 8, 96), M.glow)); core.rotation.x = Math.PI / 2; core.position.set(0, y, z);
+    for (let i = 0; i < 4; i++) { const a = i * Math.PI / 2 + 0.4; box(0.006, CEIL_Y - y, 0.006, M.mirror, Math.cos(a) * r, (CEIL_Y + y) / 2, z + Math.sin(a) * r); }
+  });
+  add(inst);
+  const l = new THREE.PointLight(0xffefd8, 10, 13, 2); l.position.set(0, CEIL_Y - 1.4, z); add(l); chandLights.push(l);
+}
+for (const j of [1, 3, 5]) chandelier(-IL / 2 + (j + 0.5) * cl);
+const ceilingG = new THREE.Group();
+scene.children.slice(CEIL_MARK).forEach(o => ceilingG.add(o));
+scene.add(ceilingG);
+
+/* ---------- banquet layout: calculated to clearances ----------
+   6 ft rounds for ten; seated chair backs sit 1.53 m from a table's centre.
+   Tables 12 ft (3.66 m) apart centre to centre, staggered in two columns each side of the aisle;
+   outer chairs 0.75 m from the wall; 1.2 m queue space in front of each buffet line. */
+const TABLE_D = 1.83, TABLE_R = TABLE_D / 2, TABLE_H = 0.76;
+const CHAIR_R = 1.18, CHAIR_PULL = 0.15, BACK_OFF = 0.2;
+const DANCE_W = 30 * FT, DANCE_D = 18 * FT;
+const DANCE_EDGE = STAGE_FRONT + DANCE_D;
+const XI = 2.30, XO = 5.09, STEP = 2.37, Z1 = -5.89;
+const BUF_X = HW - 0.1 - 0.38, BUF_Z0 = HL - 0.5 - 16 * FT, BUF_Z1 = HL - 0.5;
+const raw = [];
+for (let k = 0; k < 8; k++) raw.push({ x: -(k % 2 === 0 ? XO : XI), z: Z1 + k * STEP });   // left: outer first, eight tables
+for (let k = 0; k < 7; k++) raw.push({ x: (k % 2 === 0 ? XI : XO), z: Z1 + k * STEP });    // right: inner first, seven tables
+raw.sort((a, b) => (a.z - b.z) || (a.x - b.x));
+const tables = raw.map((t, i) => ({ n: i + 1, x: t.x, z: t.z }));
+const SWEET = { x: -2.9, z: -12.9, w: 1.52, d: 0.76 };            // on the dance floor, front left
+const AV = { x: -6.2, z: -12.4, w: 1.83, d: 0.76 };                // hotel AV table at the stage's front-left corner, long side facing the dance floor
+const UPV = new V(0, 1, 0);
+const gold = new THREE.MeshStandardMaterial({ color: 0xd3ae68, metalness: 1, roughness: 0.28, envMap: envTex, envMapIntensity: 1.25 });
+const clothMat = new THREE.MeshPhysicalMaterial({ color: 0xf0e5cc, roughness: 0.85, sheen: 0.6, sheenRoughness: 0.6, sheenColor: new THREE.Color(0xfff6e2), side: THREE.DoubleSide });
+const cushionMat = new THREE.MeshStandardMaterial({ color: 0xf2ebdb, roughness: 0.9 });
+const runnerMat = new THREE.MeshStandardMaterial({ color: 0x8b1d22, roughness: 0.92 });
+
+// dance floor: ivory with a gold edge
+box(DANCE_W, 0.02, DANCE_D, new THREE.MeshStandardMaterial({ color: 0xf3eee4, roughness: 0.22, envMap: envTex, envMapIntensity: 0.4 }), 0, 0.01, STAGE_FRONT + DANCE_D / 2);
+for (const [w, d, x, z] of [[DANCE_W + 0.08, 0.06, 0, STAGE_FRONT + 0.03], [DANCE_W + 0.08, 0.06, 0, DANCE_EDGE], [0.06, DANCE_D, -DANCE_W / 2, STAGE_FRONT + DANCE_D / 2], [0.06, DANCE_D, DANCE_W / 2, STAGE_FRONT + DANCE_D / 2],
+  [DANCE_W - 0.7, 0.025, 0, STAGE_FRONT + 0.35], [DANCE_W - 0.7, 0.025, 0, DANCE_EDGE - 0.35], [0.025, DANCE_D - 0.7, -DANCE_W / 2 + 0.35, STAGE_FRONT + DANCE_D / 2], [0.025, DANCE_D - 0.7, DANCE_W / 2 - 0.35, STAGE_FRONT + DANCE_D / 2]])
+  box(w, 0.026, d, gold, x, 0.013, z);
+
+// aisle runner: down the centre, then across to the right-hand entrance door
+const RW = 3 * FT, RX = EDOOR, RJ1 = 14.3, RJ0 = RJ1 - RW;
+function strip(x0, x1, z0, z1) { const pl = plane(x1 - x0, z1 - z0, runnerMat, (x0 + x1) / 2, 0.006, (z0 + z1) / 2); pl.rotation.x = -Math.PI / 2; }
+strip(-RW / 2, RW / 2, DANCE_EDGE, RJ1);
+strip(RW / 2, RX + RW / 2, RJ0, RJ1);
+strip(RX - RW / 2, RX + RW / 2, RJ1, HL - 0.02);
+for (const [w, d, x, z] of [[0.03, RJ0 - DANCE_EDGE, -RW / 2 + 0.06, (DANCE_EDGE + RJ0) / 2], [0.03, RJ0 - DANCE_EDGE, RW / 2 - 0.06, (DANCE_EDGE + RJ0) / 2]])
+  box(w, 0.012, d, gold, x, 0.008, z);
+
+// tablecloths: floor-length, with soft folds
+function clothGeo() {
+  const pts = [[0, TABLE_H + 0.005], [TABLE_R, TABLE_H + 0.005], [TABLE_R + 0.02, TABLE_H - 0.01], [TABLE_R + 0.026, TABLE_H - 0.06], [TABLE_R + 0.04, 0.45], [TABLE_R + 0.07, 0.08], [TABLE_R + 0.08, 0.0]].map(([r, y]) => new THREE.Vector2(r, y));
+  const g = new THREE.LatheGeometry(pts, 96), pp = g.attributes.position, v = new V();
+  for (let i = 0; i < pp.count; i++) {
+    v.fromBufferAttribute(pp, i); if (v.y >= TABLE_H - 0.05) continue;
+    const r = Math.hypot(v.x, v.z); if (r < 1e-4) continue;
+    const a = Math.atan2(v.x, v.z), f = 1 - v.y / (TABLE_H - 0.05), nr = r + 0.02 * Math.sin(a * 22) * f;
+    pp.setXYZ(i, v.x * nr / r, v.y, v.z * nr / r);
+  }
+  g.computeVertexNormals(); return g;
+}
+const tableMesh = new THREE.InstancedMesh(clothGeo(), clothMat, tables.length);
+tables.forEach((t, i) => tableMesh.setMatrixAt(i, new THREE.Matrix4().makeTranslation(t.x, 0, t.z)));
+add(tableMesh);
+
+// gold Tiffany (chiavari) chair, merged into one shape and instanced
+const SH = 0.45;
+function cylG(r, h, x, y, z, rx = 0, rz = 0) { const g = new THREE.CylinderGeometry(r, r, h, 8); if (rx) g.rotateX(rx); if (rz) g.rotateZ(rz); g.translate(x, y, z); return g; }
+function boxG(w, h, d, x, y, z) { const g = new THREE.BoxGeometry(w, h, d); g.translate(x, y, z); return g; }
+const parts = [];
+for (const sx of [-1, 1]) { parts.push(cylG(0.013, SH, sx * 0.18, SH / 2, 0.17)); parts.push(cylG(0.015, 0.93, sx * 0.18, 0.465, -0.18)); parts.push(boxG(0.03, 0.03, 0.4, sx * 0.18, SH, 0)); }
+parts.push(boxG(0.4, 0.03, 0.03, 0, SH, 0.18)); parts.push(boxG(0.4, 0.03, 0.03, 0, SH, -0.18));
+for (const y of [0.16, 0.3]) { parts.push(cylG(0.008, 0.36, 0, y, 0.17, 0, Math.PI / 2)); parts.push(cylG(0.008, 0.36, 0, y, -0.18, 0, Math.PI / 2)); for (const sx of [-1, 1]) parts.push(cylG(0.008, 0.35, sx * 0.18, y, 0, Math.PI / 2)); }
+for (const y of [0.62, 0.76, 0.91]) parts.push(cylG(0.011, 0.37, 0, y, -0.18, 0, Math.PI / 2));
+for (const x of [-0.09, -0.03, 0.03, 0.09]) { parts.push(cylG(0.007, 0.14, x, 0.69, -0.18)); parts.push(cylG(0.007, 0.15, x, 0.835, -0.18)); }
+const chairGeo = mergeGeometries(parts);
+const cushionGeo = new THREE.BoxGeometry(0.39, 0.05, 0.38); cushionGeo.translate(0, SH + 0.04, 0);
+const chairMesh = new THREE.InstancedMesh(chairGeo, gold, tables.length * 10);
+const cushionMesh = new THREE.InstancedMesh(cushionGeo, cushionMat, tables.length * 10);
+add(chairMesh); add(cushionMesh);
+let pull = CHAIR_PULL;
+function placeChairs() {
+  const m = new THREE.Matrix4(), q = new THREE.Quaternion(), one = new V(1, 1, 1), rc = CHAIR_R + pull; let k = 0;
+  tables.forEach(t => { for (let i = 0; i < 10; i++) {
+    const a = (i + 0.5) / 10 * Math.PI * 2;
+    q.setFromAxisAngle(UPV, a + Math.PI); m.compose(new V(t.x + Math.sin(a) * rc, 0, t.z + Math.cos(a) * rc), q, one);
+    chairMesh.setMatrixAt(k, m); cushionMesh.setMatrixAt(k, m); k++;
+  } });
+  chairMesh.instanceMatrix.needsUpdate = true; cushionMesh.instanceMatrix.needsUpdate = true;
+}
+placeChairs();
+
+// buffet lines by the entrance, with chafing dishes
+const clothFlat = new THREE.MeshStandardMaterial({ color: 0xf0e5cc, roughness: 0.85 });
+const lidGeo = new THREE.CylinderGeometry(0.16, 0.16, 0.5, 18, 1, false, Math.PI / 2, Math.PI); lidGeo.rotateX(Math.PI / 2);
+for (const s of [-1, 1]) {
+  const x = s * BUF_X, len = BUF_Z1 - BUF_Z0;
+  box(0.78, TABLE_H, len, clothFlat, x, TABLE_H / 2, (BUF_Z0 + BUF_Z1) / 2);
+  for (let i = 0; i < 6; i++) {
+    const zz = BUF_Z0 + len * (i + 0.5) / 6;
+    box(0.36, 0.1, 0.52, gold, x, TABLE_H + 0.05, zz);
+    const lid = add(new THREE.Mesh(lidGeo, gold)); lid.position.set(x, TABLE_H + 0.1, zz); lid.rotation.y = Math.PI / 2; lid.scale.set(1, 0.8, 1);
+  }
+}
+
+// the hotel's AV table, black-skirted, as in the site photos
+box(AV.d, TABLE_H, AV.w, M.black, AV.x, TABLE_H / 2, AV.z);
+box(0.42, 0.08, 0.62, new THREE.MeshStandardMaterial({ color: 0x2a2b2e, roughness: 0.5 }), AV.x, TABLE_H + 0.04, AV.z + 0.35);
+box(0.24, 0.02, 0.34, new THREE.MeshStandardMaterial({ color: 0x3a3b3f, roughness: 0.4 }), AV.x - 0.05, TABLE_H + 0.01, AV.z - 0.45);
+
+// the couple's table: on the dance floor, front left, facing the room
+box(SWEET.w, TABLE_H, SWEET.d, clothFlat, SWEET.x, TABLE_H / 2, SWEET.z);
+box(SWEET.w + 0.06, 0.012, SWEET.d + 0.06, gold, SWEET.x, TABLE_H + 0.006, SWEET.z);
+const sweetChairs = new THREE.InstancedMesh(chairGeo, gold, 2), sweetCush = new THREE.InstancedMesh(cushionGeo, cushionMat, 2);
+[-0.35, 0.35].forEach((dx, i) => { const m = new THREE.Matrix4().makeTranslation(SWEET.x + dx, 0, SWEET.z - 0.55); sweetChairs.setMatrixAt(i, m); sweetCush.setMatrixAt(i, m); });
+add(sweetChairs); add(sweetCush);
+
+// table numbers, shown only from above
+const labels = new THREE.Group(); labels.visible = false; add(labels);
+tables.forEach(t => {
+  const [c, g] = canvas(128, 128);
+  g.fillStyle = 'rgba(38,36,31,0.88)'; g.beginPath(); g.arc(64, 64, 58, 0, Math.PI * 2); g.fill();
+  g.fillStyle = '#f2e3bf'; g.font = '600 62px Inter, Arial, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(String(t.n), 64, 68);
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex(c), depthTest: false, transparent: true }));
+  sp.position.set(t.x, 1.2, t.z); sp.scale.set(0.9, 0.9, 1); sp.renderOrder = 10; labels.add(sp);
+});
+
+// spacing check
+const checksEl = document.getElementById('checks');
+function updateChecks() {
+  const Rb = CHAIR_R + pull + BACK_OFF;
+  let nn = 1e9; for (let i = 0; i < tables.length; i++) for (let j = i + 1; j < tables.length; j++) nn = Math.min(nn, Math.hypot(tables[i].x - tables[j].x, tables[i].z - tables[j].z));
+  const minAbsX = Math.min(...tables.map(t => Math.abs(t.x))), maxAbsX = Math.max(...tables.map(t => Math.abs(t.x)));
+  const rows = [
+    ['Between neighbouring tables', nn - 2 * Rb],
+    ['Centre aisle', 2 * minAbsX - 2 * Rb],
+    ['Outer chairs to wall', HW - 0.1 - maxAbsX - Rb],
+    ['Front tables to dance floor', Math.min(...tables.map(t => t.z)) - Rb - DANCE_EDGE],
+    ['Dance floor to AV table', -DANCE_W / 2 - (AV.x + AV.d / 2)],
+    ['Back tables to entrance wall', HL - Math.max(...tables.map(t => t.z)) - Rb]
+  ];
+  checksEl.innerHTML = '';
+  rows.forEach(([label, v]) => {
+    const [cls, word] = v < 0 ? ['bad', 'Chairs collide'] : v < 0.595 ? ['bad', 'Tight'] : v < 0.9 ? ['tight', 'Workable'] : ['ok', 'Comfortable'];
+    const a = document.createElement('span'); a.className = 'k'; a.textContent = label;
+    const b = document.createElement('span'); b.className = 'v'; b.textContent = v < 0 ? `\u2212${Math.abs(v).toFixed(2)} m` : `${v.toFixed(2)} m`;
+    const c = document.createElement('span'); c.className = 'pill ' + cls; c.textContent = word;
+    checksEl.append(a, b, c);
+  });
+}
+updateChecks();
+
+/* ---------- lighting ---------- */
+const hemi = add(new THREE.HemisphereLight(0xfbf7f1, 0x5e5953, 1.2));
+const room = [];
+for (let z = -HL + 3; z < HL; z += 5.2) for (const x of [-4.2, 4.2]) { const l = new THREE.PointLight(0xfff3e8, 10, 12, 2); l.position.set(x, CEIL_Y - 1.7, z); add(l); room.push(l); }
+const stageSpot = new THREE.SpotLight(0xfff1e0, 30, 14, 0.7, 0.6, 1.3); stageSpot.position.set(0, SOFFIT_Y - 0.3, -HL + 4.5); stageSpot.target.position.set(0, STAGE_H, -HL - 0.5); add(stageSpot); add(stageSpot.target);
+const LIGHTS = {
+  house: { hemi: 1.15, room: 10, chand: 10, stage: 14, exp: 1.0, dl: 1.0, cove: 1.0, sc: 1.0 },
+  evening: { hemi: 0.3, room: 3, chand: 9, stage: 12, exp: 1.0, dl: 0.55, cove: 0.55, sc: 1.1 }
+};
+function setLighting(key) {
+  const Lt = LIGHTS[key];
+  hemi.intensity = Lt.hemi; room.forEach(l => l.intensity = Lt.room); chandLights.forEach(l => l.intensity = Lt.chand);
+  stageSpot.intensity = Lt.stage; renderer.toneMappingExposure = Lt.exp;
+  M.downlight.color.setRGB(1.9 * Lt.dl, 1.8 * Lt.dl, 1.6 * Lt.dl);
+  M.cove.color.setRGB(1.5 * Lt.cove, 1.7 * Lt.cove, 1.9 * Lt.cove);
+  M.sconce.color.setRGB(2.6 * Lt.sc, 2.0 * Lt.sc, 1.3 * Lt.sc);
+}
+
+/* ---------- post ---------- */
+const composer = new EffectComposer(renderer);
+composer.addPass(new RenderPass(scene, camera));
+composer.addPass(new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 0.38, 0.4, 1.25));
+composer.addPass(new OutputPass());
+
+/* ---------- views and movement ---------- */
+function look(px, py, pz, tx, ty, tz) { const d = new V(tx - px, ty - py, tz - pz); return { pos: new V(px, py, pz), yaw: Math.atan2(-d.x, -d.z), pitch: Math.atan2(d.y, Math.hypot(d.x, d.z)) }; }
+const near = (x, z) => tables.reduce((b, t) => Math.hypot(t.x - x, t.z - z) < Math.hypot(b.x - x, b.z - z) ? t : b);
+const midL = near(-XI, 1.2);
+const VIEWS = [
+  { id: 'overview', name: 'Overview', caption: 'The full room from the entrance corner: buffet lines, fifteen tables, the dance floor, the couple’s table and the stage.', ...look(4.6, 3.4, HL - 0.8, -1.0, 1.0, -HL) },
+  { id: 'plan', name: 'Bird’s-eye', caption: 'The calculated layout from above, ceiling lifted away, tables numbered front to back.', ...look(0, 27, 0.4, 0, 0, 0) },
+  { id: 'entrance', name: 'From the doors', caption: 'Walking in through the right-hand door, where the aisle runner starts. 3.6 m of open arrival space.', ...look(RX, 1.62, HL - 0.6, 0, 1.6, -HL) },
+  { id: 'aisle', name: 'Down the aisle', caption: 'On the runner, with 1.5 m between seated chair backs either side.', ...look(0, 1.62, 7.5, 0, 1.7, -HL) },
+  { id: 'between', name: 'Between tables', caption: 'The staggered columns on the left: every table sits 12 ft from its neighbours.', ...look(-(XI + XO) / 2, 1.62, 12.4, -(XI + XO) / 2, 1.0, -6) },
+  { id: 'seat', name: 'Guest’s view', caption: `Seated at table ${midL.n}, facing the stage and LED wall.`, ...look(midL.x + 0.4, 1.2, midL.z + 1.28, 0, 2.2, ALC_BACK) },
+  { id: 'couple', name: 'Couple’s table', caption: 'The bride and groom’s table on the dance floor, front left, with the AV table in the corner beyond.', ...look(-0.6, 1.62, -7.0, SWEET.x - 0.8, 1.0, SWEET.z - 0.4) },
+  { id: 'couplesview', name: 'From the couple', caption: 'What the bride and groom see from their seats: the dance floor and every table.', ...look(SWEET.x + 0.35, 1.2, SWEET.z - 0.55, 0, 0.9, 6) },
+  { id: 'buffet', name: 'Buffet', caption: 'One of the two 16 ft buffet lines by the entrance, with 1.2 m of queue space in front.', ...look(3.6, 1.62, 8.6, BUF_X, 0.9, BUF_Z1 - 1) },
+  { id: 'stage', name: 'The stage', caption: 'The 30 × 18 ft dance floor in front of the stage, with the couple’s table at its front left.', ...look(0, 1.62, DANCE_EDGE + 1.6, 0, 2.2, ALC_BACK) },
+  { id: 'fromstage', name: 'From the stage', caption: 'The view from the stage over the dance floor to all fifteen tables.', ...look(0.3, STAGE_H + 1.62, -HL + 0.9, 0, 0.8, HL - 4) }
+];
+const byId = Object.fromEntries(VIEWS.map(v => [v.id, v]));
+const cam = { pos: new V(), yaw: 0, pitch: 0 };
+const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+let tween = null, tour = null, walking = false;
+const ease = t => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+const viewName = document.getElementById('viewName'), viewCap = document.getElementById('viewCap'), viewsNav = document.getElementById('views');
+VIEWS.forEach(v => { const b = document.createElement('button'); b.type = 'button'; b.textContent = v.name; b.dataset.view = v.id; b.setAttribute('aria-pressed', 'false'); b.addEventListener('click', () => { stopTour(); goTo(v); }); viewsNav.appendChild(b); });
+function setCaption(v) {
+  viewName.textContent = v ? v.name : 'Walking';
+  document.getElementById('miniName').textContent = v ? v.name : 'Walking';
+  viewCap.textContent = v ? v.caption : 'Walk the room at eye height. Drag to look around.';
+  viewsNav.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(!!v && b.dataset.view === v.id)));
+}
+function goTo(v, dur = 1.8) { walking = false; tween = { from: { pos: cam.pos.clone(), yaw: cam.yaw, pitch: cam.pitch }, to: v, t: 0, dur: reduceMotion ? 0.01 : dur }; setCaption(v); }
+function snap(v) { cam.pos.copy(v.pos); cam.yaw = v.yaw; cam.pitch = v.pitch; setCaption(v); }
+const tourBtn = document.getElementById('tour');
+const TOUR = ['entrance', 'aisle', 'seat', 'between', 'couple', 'couplesview', 'stage', 'buffet', 'overview', 'plan'];
+const uiPanel = document.getElementById('panel'), miniEl = document.getElementById('mini'), miniTour = document.getElementById('miniTour');
+function setPanel(open) { uiPanel.hidden = !open; miniEl.hidden = open; }
+let tourWasOpen = true;
+function startTour() {
+  tour = { i: 0, wait: 3.2 }; goTo(byId[TOUR[0]], 2.4);
+  tourBtn.textContent = 'Stop the tour'; tourBtn.setAttribute('aria-pressed', 'true'); miniTour.textContent = 'Stop';
+  tourWasOpen = !uiPanel.hidden; setPanel(false);
+}
+function stopTour(restore = false) {
+  if (!tour) return; tour = null;
+  tourBtn.textContent = 'Play the tour'; tourBtn.setAttribute('aria-pressed', 'false'); miniTour.textContent = 'Play the tour';
+  if (restore && tourWasOpen) setPanel(true);
+}
+tourBtn.addEventListener('click', () => tour ? stopTour(true) : startTour());
+miniTour.addEventListener('click', () => tour ? stopTour(true) : startTour());
+document.getElementById('hidePanel').addEventListener('click', () => setPanel(false));
+document.getElementById('showPanel').addEventListener('click', () => { stopTour(); setPanel(true); });
+
+let drag = null;
+wrap.addEventListener('pointerdown', e => { drag = { x: e.clientX, y: e.clientY, id: e.pointerId }; wrap.setPointerCapture(e.pointerId); wrap.classList.add('dragging'); });
+wrap.addEventListener('pointermove', e => {
+  if (!drag || drag.id !== e.pointerId) return;
+  const dx = e.clientX - drag.x, dy = e.clientY - drag.y; drag.x = e.clientX; drag.y = e.clientY;
+  if (Math.abs(dx) + Math.abs(dy) < 0.5) return;
+  stopTour(); tween = null; if (!walking) setCaption(null); walking = true;
+  cam.yaw += dx * 0.0042; cam.pitch = THREE.MathUtils.clamp(cam.pitch + dy * 0.0036, -1.25, 1.25);
+});
+const endDrag = () => { drag = null; wrap.classList.remove('dragging'); };
+wrap.addEventListener('pointerup', endDrag); wrap.addEventListener('pointercancel', endDrag);
+const keys = new Set();
+const KEYMAP = { KeyW: 'f', ArrowUp: 'f', KeyS: 'b', ArrowDown: 'b', KeyA: 'l', ArrowLeft: 'l', KeyD: 'r', ArrowRight: 'r' };
+window.addEventListener('keydown', e => { if (e.target.closest && e.target.closest('input')) return; const k = KEYMAP[e.code]; if (k) { keys.add(k); e.preventDefault(); } });
+window.addEventListener('keyup', e => { const k = KEYMAP[e.code]; if (k) keys.delete(k); });
+window.addEventListener('blur', () => keys.clear());
+document.querySelectorAll('#pad button').forEach(b => {
+  const k = b.dataset.move;
+  b.addEventListener('pointerdown', e => { e.preventDefault(); keys.add(k); b.setPointerCapture(e.pointerId); });
+  const up = () => keys.delete(k);
+  b.addEventListener('pointerup', up); b.addEventListener('pointercancel', up); b.addEventListener('lostpointercapture', up);
+});
+
+function update(dt) {
+  if (tween) {
+    tween.t += dt / tween.dur;
+    const k = ease(Math.min(1, tween.t)), f = tween.from, to = tween.to;
+    cam.pos.lerpVectors(f.pos, to.pos, k);
+    let dy = to.yaw - f.yaw; dy = ((dy + Math.PI) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2) - Math.PI;
+    cam.yaw = f.yaw + dy * k; cam.pitch = f.pitch + (to.pitch - f.pitch) * k;
+    if (tween.t >= 1) tween = null;
+  }
+  if (tour && !tween) { tour.wait -= dt; if (tour.wait <= 0) { tour.i++; if (tour.i >= TOUR.length) stopTour(true); else { goTo(byId[TOUR[tour.i]], TOUR[tour.i] === 'stage' ? 4.5 : 3.0); tour.wait = 3.0; } } }
+  if (keys.size) {
+    if (tour) stopTour(); tween = null;
+    if (!walking) { walking = true; setCaption(null); }
+    const fwd = new V(-Math.sin(cam.yaw), 0, -Math.cos(cam.yaw)), right = new V(Math.cos(cam.yaw), 0, -Math.sin(cam.yaw)), mv = new V();
+    if (keys.has('f')) mv.add(fwd); if (keys.has('b')) mv.sub(fwd); if (keys.has('r')) mv.add(right); if (keys.has('l')) mv.sub(right);
+    if (mv.lengthSq() > 0) cam.pos.addScaledVector(mv.normalize(), 2.6 * dt);
+    cam.pos.x = THREE.MathUtils.clamp(cam.pos.x, -HW + 0.4, HW - 0.4);
+    const ax = Math.abs(cam.pos.x), zMin = ax < ALC_W / 2 - 0.3 ? ALC_BACK + 0.5 : -HL + 0.4;
+    cam.pos.z = THREE.MathUtils.clamp(cam.pos.z, zMin, HL - 0.4);
+    const onStage = (cam.pos.z < STAGE_FRONT && ax < STAGE_W / 2) || cam.pos.z < -HL;
+    const eye = (onStage ? STAGE_H : 0) + 1.62;
+    cam.pos.y += (eye - cam.pos.y) * Math.min(1, dt * 4);
+  }
+  const top = cam.pos.y > SOFFIT_Y - 0.3; ceilingG.visible = !top; labels.visible = top;
+  camera.position.copy(cam.pos); camera.rotation.set(cam.pitch, cam.yaw, 0);
+}
+
+document.querySelectorAll('input[name="light"]').forEach(r => r.addEventListener('change', () => setLighting(r.value)));
+document.querySelectorAll('input[name="chairs"]').forEach(r => r.addEventListener('change', () => { pull = r.value === 'seated' ? CHAIR_PULL : 0; placeChairs(); updateChecks(); }));
+if (window.matchMedia('(pointer: coarse)').matches) document.getElementById('hint').textContent = 'Drag to look around. Use the arrows to walk.';
+window.addEventListener('resize', () => { camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); composer.setSize(window.innerWidth, window.innerHeight); });
+
+setLighting('house');
+snap(byId.overview);
+const clock = new THREE.Clock();
+let first = true;
+function frame() {
+  update(Math.min(clock.getDelta(), 0.05));
+  composer.render();
+  if (first) { first = false; document.getElementById('loading').classList.add('done'); }
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+</script>
+
+</body>
+</html>
