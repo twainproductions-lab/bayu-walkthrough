@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Bayu Ballroom, Romina &amp; Aidan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root { --ink: #f4efe6; --dim: rgba(244,239,230,.62); --gold: #c9a56c; --gold-hi: #dcbb83; --gold-soft: #e6d3ad; --glass: rgba(24,22,20,.62); --line: rgba(244,239,230,.16); }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: #12110f; color: var(--ink); font: 14px/1.4 Inter, system-ui, sans-serif; overflow: hidden; -webkit-tap-highlight-color: transparent; }
+  #gl { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; cursor: grab; }
+  #gl.drag { cursor: grabbing; }
+  .panel { position: fixed; background: var(--glass); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid var(--line); border-radius: 12px; }
+  #head { top: 12px; left: 12px; padding: 10px 14px 11px; max-width: min(460px, calc(100vw - 24px)); }
+  #head .kicker { font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--gold); }
+  #head h1 { margin: 2px 0 0; font: 600 26px/1.1 'Cormorant Garamond', Georgia, serif; color: var(--gold-hi); }
+  #head h1 span { color: var(--gold); margin-right: 8px; }
+  #head p { margin: 4px 0 0; color: var(--gold-soft); opacity: .85; font-size: 13px; }
+  #state { top: 12px; right: 12px; display: flex; padding: 3px; gap: 2px; }
+  #state button { appearance: none; border: 0; background: transparent; color: var(--gold); font: 500 13px Inter, sans-serif; padding: 7px 12px; border-radius: 9px; cursor: pointer; }
+  #state button[aria-pressed="true"] { background: var(--gold); color: #1b1916; }
+  #views { left: 50%; bottom: 12px; transform: translateX(-50%); display: flex; gap: 2px; padding: 4px; max-width: calc(100vw - 24px); overflow-x: auto; scrollbar-width: none; }
+  #views::-webkit-scrollbar { display: none; }
+  #views button { appearance: none; border: 0; background: transparent; color: var(--gold); opacity: .8; font: 500 13px Inter, sans-serif; padding: 7px 10px; border-radius: 9px; white-space: nowrap; cursor: pointer; }
+  #views button b { color: var(--gold); font-weight: 500; margin-right: 5px; }
+  #views button[aria-current="true"] { background: rgba(201,165,108,.2); color: var(--gold-hi); opacity: 1; }
+  #plan { right: 12px; bottom: 64px; padding: 8px; width: 104px; }
+  #plan svg { display: block; width: 100%; height: auto; }
+  #plan .dot { cursor: pointer; }
+  #plan-toggle { display: none; }
+  .hot { position: fixed; left: 0; top: 0; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; gap: 4px; pointer-events: auto; cursor: pointer; transition: opacity .2s; }
+  .hot i { width: 30px; height: 30px; border-radius: 50%; border: 2px solid var(--gold-hi); background: rgba(20,18,16,.45); color: var(--gold-hi); font: 500 13px/26px Inter, sans-serif; text-align: center; font-style: normal; box-shadow: 0 1px 6px rgba(0,0,0,.4); }
+  .hot span.off { visibility: hidden; }
+  .hot span { font-size: 12px; padding: 2px 7px; border-radius: 6px; background: rgba(20,18,16,.55); color: var(--gold-hi); white-space: nowrap; text-shadow: 0 1px 2px rgba(0,0,0,.5); }
+  .hot:hover i { background: var(--gold-hi); color: #1b1916; }
+  #load { position: fixed; left: 50%; top: 50%; transform: translate(-50%,-50%); padding: 8px 14px; border-radius: 10px; background: var(--glass); font-size: 13px; color: var(--dim); display: none; }
+  #note { position: fixed; left: 12px; bottom: 64px; font-size: 11px; color: var(--dim); max-width: 46vw; padding: 4px 9px; border-radius: 8px; background: rgba(20,18,16,.55); }
+  #stills-btn { top: 12px; right: 232px; appearance: none; color: var(--gold); font: 500 13px Inter, sans-serif; padding: 9px 14px; cursor: pointer; }
+  #gallery { position: fixed; inset: 0; background: rgba(12,11,10,.96); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 10; }
+  #gallery[hidden] { display: none; }
+  #g-img { max-width: 96vw; max-height: calc(100vh - 90px); object-fit: contain; border-radius: 6px; }
+  #g-bar { display: flex; align-items: center; gap: 14px; margin-top: 14px; color: var(--gold-hi); font-size: 14px; }
+  #g-bar button { appearance: none; border: 1px solid var(--line); background: transparent; color: var(--gold); font: 500 15px Inter, sans-serif; padding: 6px 14px; border-radius: 9px; cursor: pointer; }
+  #g-cap { min-width: 220px; text-align: center; }
+  @media (max-width: 640px) {
+    #stills-btn { top: auto; bottom: 60px; right: auto; left: 12px; padding: 7px 11px; font-size: 12px; }
+    #head { padding: 8px 12px 9px; max-width: calc(100vw - 200px); }
+    #head .kicker .names, #note .long { display: none; }
+    #head h1 { font-size: 21px; }
+    #head p { font-size: 12px; }
+    #state button { padding: 6px 9px; font-size: 12px; }
+    #plan { width: 78px; bottom: 60px; }
+    #plan.closed { display: none; }
+    #plan-toggle { display: block; position: fixed; right: 12px; bottom: 60px; }
+    #plan-toggle button { appearance: none; border: 0; background: transparent; color: var(--gold); font: 500 12px Inter, sans-serif; padding: 7px 11px; }
+    #plan:not(.closed) + #plan-toggle { bottom: calc(60px + 78px * 2.244 + 24px); }
+    #note { max-width: 52vw; bottom: 104px; }
+  }
+</style>
+</head>
+<body>
+<canvas id="gl"></canvas>
+<div id="hots"></div>
+
+<div id="head" class="panel">
+  <div class="kicker">Bayu Ballroom<span class="names"> &nbsp;Romina &amp; Aidan</span></div>
+  <h1><span id="vnum">3</span><span id="vname" style="color:var(--gold-hi);margin:0">Aisle</span></h1>
+  <p id="vcap"></p>
+</div>
+
+<button id="stills-btn" class="panel" type="button">Stills</button>
+<div id="state" class="panel" role="group" aria-label="Lighting">
+  <button type="button" data-s="dinner" aria-pressed="true">Dinner</button>
+  <button type="button" data-s="house" aria-pressed="false">House lights</button>
+</div>
+
+<div id="plan" class="panel"></div>
+<div id="plan-toggle" class="panel"><button type="button">Plan</button></div>
+
+<nav id="views" class="panel" aria-label="Viewpoints"></nav>
+<div id="note">Visualisation for planning<span class="long">: flowers, drapes and lighting are indicative of the Fleurs at Marrakesh proposal, and the real set-up may vary</span>.</div>
+<div id="load">Loading</div>
+<div id="gallery" hidden>
+  <img id="g-img" alt="">
+  <div id="g-bar"><button type="button" id="g-prev" aria-label="Previous">&#8249;</button><span id="g-cap"></span><button type="button" id="g-next" aria-label="Next">&#8250;</button><button type="button" id="g-close" aria-label="Close">Close</button></div>
+</div>
+
+<script>
+// Viewpoints, walkthrough frame: x across (right when facing the stage), y up, z along the room (stage at -z).
+// heading: bearing of the image centre, degrees clockwise from "towards the stage".
+const VIEWS = [
+  { n: 1, id: 'p01', name: 'Entrance',       cap: 'Just inside the right-hand door, between the two urns.',     pos: [3.8, 1.62, 15.4],     floor: 0,    heading: -6.9 },
+  { n: 2, id: 'p02', name: 'Arrival',        cap: 'Where the carpet turns towards the stage, aisle florals ahead.', pos: [0, 1.62, 13.85],   floor: 0,    heading: 0 },
+  { n: 3, id: 'p03', name: 'Aisle',          cap: 'Mid-room on the red carpet.',                              pos: [0, 1.62, 4.5],        floor: 0,    heading: 0 },
+  { n: 4, id: 'p04', name: 'Guest seat',     cap: 'Seated at table 7, facing the stage.',                       pos: [-1.841, 1.2, 2.543],  floor: 0,    heading: 5.7 },
+  { n: 5, id: 'p05', name: 'Between tables', cap: 'Standing between tables 7 and 9 on the left.',               pos: [-3.7, 1.62, 3.0],     floor: 0,    heading: 11.1 },
+  { n: 6, id: 'p06', name: "Couple's table", cap: "On the dance floor, in front of the couple's table.",          pos: [-1.5, 1.72, -10.6],   floor: 0.1,  heading: -24.5 },
+  { n: 7, id: 'p07', name: 'Dance floor',    cap: 'On the monogram dance floor, facing the stage.',             pos: [0, 1.72, -11.0],      floor: 0.1,  heading: 0 },
+  { n: 8, id: 'p08', name: 'On the stage',   cap: "The couple's view of the room.",                             pos: [0.3, 2.97, -15.2],    floor: 1.35, heading: 180 },
+];
+const TABLES = [[-5.09,-5.89],[2.30,-5.89],[-2.30,-3.52],[5.09,-3.52],[-5.09,-1.15],[2.30,-1.15],[-2.30,1.22],[5.09,1.22],[-5.09,3.59],[2.30,3.59],[-2.30,5.96],[5.09,5.96],[-5.09,8.33],[2.30,8.33],[-2.30,10.70]];
+const D2R = Math.PI / 180;
+
+let cur = VIEWS[2], state = 'dinner';
+let yaw = 0, pitch = 0, fov = 75;          // degrees; fov is vertical
+const cache = {};
+
+// ---------- WebGL
+const cv = document.getElementById('gl');
+let gl = cv.getContext('webgl2', { antialias: false });
+const GL2 = !!gl;
+if (!gl) gl = cv.getContext('webgl', { antialias: false });
+const VS2 = `#version 300 es
+in vec2 p; void main(){ gl_Position = vec4(p, 0., 1.); }`;
+const FS2 = `#version 300 es
+precision highp float;
+uniform sampler2D tex; uniform vec2 res; uniform float yaw, pitch, fov, heading;
+out vec4 o;
+void main(){
+  vec2 q = (gl_FragCoord.xy / res) * 2. - 1.;
+  float t = tan(fov * .5);
+  vec3 d = normalize(vec3(q.x * t * res.x / res.y, q.y * t, 1.));
+  float cp = cos(pitch), sp = sin(pitch);
+  d = vec3(d.x, d.y * cp + d.z * sp, -d.y * sp + d.z * cp);
+  float cy = cos(yaw), sy = sin(yaw);
+  d = vec3(d.x * cy + d.z * sy, d.y, -d.x * sy + d.z * cy);
+  float b = atan(d.x, d.z) - heading;
+  float e = asin(clamp(d.y, -1., 1.));
+  float u0 = b / 6.2831853 + .5;
+  float u = fract(u0), u2 = fract(u0 + .5) - .5;   // u2 is continuous across the seam
+  vec2 dx = vec2(dFdx(u), dFdx(e / 3.14159265)), dy = vec2(dFdy(u), dFdy(e / 3.14159265));
+  vec2 dx2 = vec2(dFdx(u2), dx.y), dy2 = vec2(dFdy(u2), dy.y);
+  if (abs(dx2.x) + abs(dy2.x) < abs(dx.x) + abs(dy.x)) { dx = dx2; dy = dy2; }
+  o = textureGrad(tex, vec2(u, .5 + e / 3.14159265), dx, dy);
+}`;
+const VS1 = `attribute vec2 p; void main(){ gl_Position = vec4(p, 0., 1.); }`;
+const FS1 = `precision highp float;
+uniform sampler2D tex; uniform vec2 res; uniform float yaw, pitch, fov, heading;
+void main(){
+  vec2 q = (gl_FragCoord.xy / res) * 2. - 1.;
+  float t = tan(fov * .5);
+  vec3 d = normalize(vec3(q.x * t * res.x / res.y, q.y * t, 1.));
+  float cp = cos(pitch), sp = sin(pitch);
+  d = vec3(d.x, d.y * cp + d.z * sp, -d.y * sp + d.z * cp);
+  float cy = cos(yaw), sy = sin(yaw);
+  d = vec3(d.x * cy + d.z * sy, d.y, -d.x * sy + d.z * cy);
+  float b = atan(d.x, d.z) - heading;
+  float e = asin(clamp(d.y, -1., 1.));
+  gl_FragColor = texture2D(tex, vec2(fract(b / 6.2831853 + .5), .5 + e / 3.14159265));
+}`;
+function sh(type, src) { const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s); if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) console.error(gl.getShaderInfoLog(s)); return s; }
+const prog = gl.createProgram();
+gl.attachShader(prog, sh(gl.VERTEX_SHADER, GL2 ? VS2 : VS1));
+gl.attachShader(prog, sh(gl.FRAGMENT_SHADER, GL2 ? FS2 : FS1));
+gl.linkProgram(prog); gl.useProgram(prog);
+const buf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 3,-1, -1,3]), gl.STATIC_DRAW);
+const loc = gl.getAttribLocation(prog, 'p'); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+const U = {}; ['tex','res','yaw','pitch','fov','heading'].forEach(k => U[k] = gl.getUniformLocation(prog, k));
+let texReady = false;
+
+function upload(img) {
+  const t = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, t);
+  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, GL2 ? gl.REPEAT : gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  if (GL2) { gl.generateMipmap(gl.TEXTURE_2D); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR); }
+  else gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+  return t;
+}
+function getTex(v, s) {
+  const k = v.id + '_' + s;
+  if (!cache[k]) cache[k] = new Promise((res, rej) => { const im = new Image(); im.onload = () => res(upload(im)); im.onerror = rej; im.src = 'img/' + s + '_' + v.id + '.jpg'; });
+  return cache[k];
+}
+
+let showing = null;
+async function show(v, s, keepYaw) {
+  const prevHeadingWorld = yaw;
+  const ld = document.getElementById('load');
+  const timer = setTimeout(() => ld.style.display = 'block', 150);
+  let t;
+  try { t = await getTex(v, s); } catch (e) { clearTimeout(timer); ld.textContent = 'Could not load this view'; ld.style.display = 'block'; return; }
+  clearTimeout(timer); ld.style.display = 'none';
+  const changedView = v !== cur;
+  cur = v; state = s; showing = t; texReady = true;
+  if (!keepYaw || changedView) { yaw = v.heading; pitch = 0; }
+  else yaw = prevHeadingWorld;
+  ui(); draw();
+  try { history.replaceState(null, '', '#v' + v.n + '-' + s); } catch (e) {}
+  // warm the other state and the neighbours
+  getTex(v, s === 'dinner' ? 'house' : 'dinner');
+}
+
+function resize() {
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  cv.width = Math.round(innerWidth * dpr); cv.height = Math.round(innerHeight * dpr);
+  gl.viewport(0, 0, cv.width, cv.height);
+  draw();
+}
+function draw() {
+  if (!texReady) return;
+  gl.bindTexture(gl.TEXTURE_2D, showing);
+  gl.uniform1i(U.tex, 0);
+  gl.uniform2f(U.res, cv.width, cv.height);
+  gl.uniform1f(U.yaw, yaw * D2R); gl.uniform1f(U.pitch, pitch * D2R); gl.uniform1f(U.fov, fov * D2R);
+  gl.uniform1f(U.heading, cur.heading * D2R);
+  gl.drawArrays(gl.TRIANGLES, 0, 3);
+  placeHots(); planHeading();
+}
+
+// ---------- hotspots: the floor point of each other viewpoint
+const hotsEl = document.getElementById('hots');
+const hotEls = VIEWS.map(v => {
+  const el = document.createElement('div'); el.className = 'hot';
+  el.innerHTML = '<i>' + v.n + '</i><span>' + v.name + '</span>';
+  el.addEventListener('click', e => { e.stopPropagation(); show(v, state); });
+  hotsEl.appendChild(el); return el;
+});
+function placeHots() {
+  const w = innerWidth, h = innerHeight, t = Math.tan(fov * D2R / 2), asp = w / h;
+  const cy = Math.cos(yaw * D2R), sy = Math.sin(yaw * D2R), cp = Math.cos(pitch * D2R), sp = Math.sin(pitch * D2R);
+  VIEWS.forEach((v, i) => {
+    const el = hotEls[i];
+    if (v === cur) { el.style.display = 'none'; return; }
+    const dx = v.pos[0] - cur.pos[0], dz = v.pos[2] - cur.pos[2], dy = v.floor + 0.02 - cur.pos[1];
+    const dist = Math.hypot(dx, dz);
+    if (dist > 18) { el.style.display = 'none'; return; }
+    // direction in bearing space: x right, y up, z towards the stage
+    let X = dx, Y = dy, Z = -dz;
+    const n = Math.hypot(X, Y, Z); X /= n; Y /= n; Z /= n;
+    const x1 = X * cy - Z * sy, z1 = X * sy + Z * cy, y1 = Y;          // undo yaw
+    const y0 = y1 * cp - z1 * sp, z0 = y1 * sp + z1 * cp;               // undo pitch
+    if (z0 < 0.05) { el.style.display = 'none'; return; }
+    const sx = x1 / (z0 * t * asp), syy = y0 / (z0 * t);
+    if (Math.abs(sx) > 1.1 || Math.abs(syy) > 1.1) { el.style.display = 'none'; return; }
+    el.style.display = 'flex';
+    el.style.left = ((sx + 1) / 2 * w) + 'px';
+    el.style.top = ((1 - syy) / 2 * h) + 'px';
+    el.style.opacity = dist > 12 ? 0.75 : 1;
+    el._d = dist;
+  });
+  const shown = hotEls.filter(el => el.style.display === 'flex').sort((a, b) => a._d - b._d);
+  const boxes = [];
+  shown.forEach(el => {
+    const r = el.getBoundingClientRect(), lab = el.querySelector('span');
+    const lw = lab.textContent.length * 7 + 16, cx = r.left + r.width / 2;
+    const box = [cx - lw / 2 - 4, r.top - 2, cx + lw / 2 + 4, r.bottom + 2];
+    const hit = boxes.some(b => !(box[2] < b[0] || box[0] > b[2] || box[3] < b[1] || box[1] > b[3]));
+    lab.classList.toggle('off', hit);
+    boxes.push(hit ? [cx - 17, r.top, cx + 17, r.top + 32] : box);
+  });
+}
+
+// ---------- plan
+const PX0 = -7.47, PZ0 = -17.68, PW = 14.94, PH = 33.53;
+function planSVG() {
+  let s = `<svg viewBox="${PX0 - 0.4} ${PZ0 - 0.4} ${PW + 0.8} ${PH + 0.8}" xmlns="http://www.w3.org/2000/svg">`;
+  s += `<rect x="${PX0}" y="-15.85" width="${PW}" height="31.7" fill="rgba(244,239,230,.05)" stroke="rgba(244,239,230,.55)" stroke-width=".18"/>`;
+  s += `<rect x="-6.2" y="-15.85" width="12.4" height="1.83" fill="rgba(244,239,230,.22)"/>`;
+  s += `<rect x="-3.96" y="-17.68" width="7.92" height="1.83" fill="rgba(244,239,230,.22)"/>`;
+  s += `<rect x="-2.285" y="-17.68" width="4.57" height=".22" fill="#c9a56c"/>`;
+  s += `<rect x="-3.658" y="-14.02" width="7.315" height="4.877" fill="rgba(244,239,230,.62)" stroke="rgba(244,239,230,.9)" stroke-width=".1"/>`;
+  [-1, 1].forEach(k => s += `<rect x="${k > 0 ? 4.25 : -6.25}" y="-14.0" width="2.0" height=".16" fill="rgba(244,239,230,.75)"/>`);
+  s += `<rect x="-.457" y="-9.14" width=".914" height="23.44" fill="#b0323a"/>`;
+  s += `<rect x=".457" y="13.386" width="3.8" height=".914" fill="#b0323a"/>`;
+  s += `<rect x="3.343" y="14.3" width=".914" height="1.55" fill="#b0323a"/>`;
+  TABLES.forEach(([x, z]) => s += `<circle cx="${x}" cy="${z}" r=".915" fill="rgba(244,239,230,.38)"/>`);
+  s += `<rect x="-3.31" y="-13.28" width="1.52" height=".76" fill="rgba(255,255,255,.95)" stroke="#12110f" stroke-width=".06"/>`;
+  s += `<rect x="-7.11" y="-12.78" width="1.83" height=".76" fill="rgba(0,0,0,.6)" stroke="rgba(244,239,230,.3)" stroke-width=".08"/>`;
+  [-1, 1].forEach(k => s += `<rect x="${k * 6.907 - .38}" y="10.47" width=".76" height="4.88" fill="rgba(244,239,230,.38)"/>`);
+  s += `<g id="wedge"><path d="M0 0 L-2.4 -5.2 A5.7 5.7 0 0 1 2.4 -5.2 Z" fill="rgba(201,165,108,.45)"/></g>`;
+  VIEWS.forEach(v => s += `<g class="dot" data-n="${v.n}"><circle cx="${v.pos[0]}" cy="${v.pos[2]}" r="1.25" fill="transparent"/><circle class="c" cx="${v.pos[0]}" cy="${v.pos[2]}" r=".62" fill="#f4efe6" stroke="#12110f" stroke-width=".18"/></g>`);
+  return s + '</svg>';
+}
+const planEl = document.getElementById('plan');
+planEl.innerHTML = planSVG();
+planEl.querySelectorAll('.dot').forEach(g => g.addEventListener('click', () => show(VIEWS[+g.dataset.n - 1], state)));
+function planHeading() {
+  const wg = document.getElementById('wedge');
+  wg.setAttribute('transform', `translate(${cur.pos[0]} ${cur.pos[2]}) rotate(${yaw})`);
+  planEl.querySelectorAll('.dot').forEach(g => g.querySelector('.c').setAttribute('fill', +g.dataset.n === cur.n ? '#c9a56c' : '#f4efe6'));
+}
+document.querySelector('#plan-toggle button').addEventListener('click', () => planEl.classList.toggle('closed'));
+if (innerWidth <= 640) planEl.classList.add('closed');
+
+// ---------- UI
+const viewsEl = document.getElementById('views');
+VIEWS.forEach(v => {
+  const b = document.createElement('button'); b.type = 'button';
+  b.innerHTML = '<b>' + v.n + '</b>' + v.name;
+  b.addEventListener('click', () => show(v, state));
+  viewsEl.appendChild(b);
+});
+document.querySelectorAll('#state button').forEach(b => b.addEventListener('click', () => show(cur, b.dataset.s, true)));
+function ui() {
+  document.getElementById('vnum').textContent = cur.n;
+  document.getElementById('vname').textContent = cur.name;
+  document.getElementById('vcap').textContent = cur.cap;
+  document.querySelectorAll('#state button').forEach(b => b.setAttribute('aria-pressed', b.dataset.s === state));
+  [...viewsEl.children].forEach((b, i) => {
+    b.setAttribute('aria-current', VIEWS[i] === cur);
+    if (VIEWS[i] === cur) b.scrollIntoView({ block: 'nearest', inline: 'center' });
+  });
+}
+
+// ---------- look around: drag, pinch, wheel, keys
+const ptrs = new Map(); let pinch0 = 0, fov0 = fov;
+cv.addEventListener('pointerdown', e => { cv.setPointerCapture(e.pointerId); ptrs.set(e.pointerId, [e.clientX, e.clientY]); cv.classList.add('drag');
+  if (ptrs.size === 2) { const [a, b] = [...ptrs.values()]; pinch0 = Math.hypot(a[0] - b[0], a[1] - b[1]); fov0 = fov; } });
+cv.addEventListener('pointermove', e => {
+  if (!ptrs.has(e.pointerId)) return;
+  const [px, py] = ptrs.get(e.pointerId); ptrs.set(e.pointerId, [e.clientX, e.clientY]);
+  if (ptrs.size === 1) {
+    const k = fov / innerHeight;
+    yaw -= (e.clientX - px) * k; pitch += (e.clientY - py) * k;
+    pitch = Math.max(-85, Math.min(85, pitch)); draw();
+  } else if (ptrs.size === 2) {
+    const [a, b] = [...ptrs.values()]; const d = Math.hypot(a[0] - b[0], a[1] - b[1]);
+    if (pinch0 > 0) { fov = Math.max(30, Math.min(110, fov0 * pinch0 / d)); draw(); }
+  }
+});
+function up(e) { ptrs.delete(e.pointerId); if (!ptrs.size) cv.classList.remove('drag'); if (ptrs.size < 2) pinch0 = 0; }
+cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
+cv.addEventListener('wheel', e => { e.preventDefault(); fov = Math.max(30, Math.min(110, fov * Math.exp(e.deltaY * 0.001))); draw(); }, { passive: false });
+addEventListener('keydown', e => {
+  const k = { ArrowLeft: [-4, 0], ArrowRight: [4, 0], ArrowUp: [0, 3], ArrowDown: [0, -3] }[e.key];
+  if (k) { yaw += k[0]; pitch = Math.max(-85, Math.min(85, pitch + k[1])); draw(); }
+  if (/^[1-8]$/.test(e.key)) show(VIEWS[+e.key - 1], state);
+});
+addEventListener('resize', () => { fov = Math.min(fov, innerWidth < innerHeight ? 110 : 90); resize(); });
+
+// ---------- stills gallery (follows the lighting toggle)
+const STILLS = [['stage_wide', 'The stage'], ['couple_close', "The couple's table"], ['table_decor', 'A guest table'],
+                ['entrance_urns', 'The entrance'], ['dancefloor', 'The dance floor'], ['overview', 'The room']];
+let gi = 0;
+const gal = document.getElementById('gallery'), gimg = document.getElementById('g-img'), gcap = document.getElementById('g-cap');
+function gshow(i) {
+  gi = (i + STILLS.length) % STILLS.length;
+  gimg.src = 'stills/' + state + '_' + STILLS[gi][0] + '.jpg';
+  gimg.alt = STILLS[gi][1];
+  gcap.textContent = STILLS[gi][1] + (state === 'dinner' ? ', dinner' : ', house lights') + '  (' + (gi + 1) + ' of ' + STILLS.length + ')';
+}
+document.getElementById('stills-btn').addEventListener('click', () => { gal.hidden = false; gshow(gi); });
+document.getElementById('g-close').addEventListener('click', () => { gal.hidden = true; });
+document.getElementById('g-prev').addEventListener('click', () => gshow(gi - 1));
+document.getElementById('g-next').addEventListener('click', () => gshow(gi + 1));
+addEventListener('keydown', e => { if (gal.hidden) return; e.stopImmediatePropagation(); if (e.key === 'Escape') gal.hidden = true; if (e.key === 'ArrowLeft') gshow(gi - 1); if (e.key === 'ArrowRight') gshow(gi + 1); }, true);
+
+// ---------- start
+function fromHash() {
+  const m = /^#v([1-8])(?:-(dinner|house))?$/.exec(location.hash || '');
+  return m ? [VIEWS[+m[1] - 1], m[2] || 'dinner'] : [VIEWS[0], 'dinner'];
+}
+fov = innerWidth < innerHeight ? 95 : 72;
+resize();
+const [v0, s0] = fromHash(); cur = null; show(v0, s0);
+addEventListener('hashchange', () => { const [v, s] = fromHash(); if (v !== cur || s !== state) show(v, s); });
+</script>
+</body>
+</html>
